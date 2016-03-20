@@ -34,6 +34,13 @@ test('it builds valid bundles when using cache', (t) => {
         path: testUtils.testOutputDir,
         filename: filename,
       },
+      module: {
+        loaders: [
+          {
+            loader: path.resolve(__dirname, '../index.js'), // cached-loader
+          },
+        ],
+      },
     }, function(err) {
       if (err) t.notOk(err);
       testUtils.waitForMtimeTick(done);
