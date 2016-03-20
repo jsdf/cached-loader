@@ -1,0 +1,19 @@
+{
+  "name": "cached-loader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run lint && tap test",
+    "lint": "eslint .",
+    "lint-fix": "eslint . --fix"
+  },
+  "author": "James Friend <james@jsdf.co> (http://jsdf.co/)",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "2.4.0",
+    "rimraf": "^2.5.2",
+    "tap": "^5.7.0",
+    "webpack": "^1.12.14"
+  }
+}
