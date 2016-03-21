@@ -61,7 +61,7 @@ function writeCache(cacheKeyRoot, cacheDir, resourcePath, content, fileDependenc
   var dependencies = {};
 
   fileDependencies.forEach(function(depFile) {
-    dependencies[depFile] = digest(readFile(depFile));
+    dependencies[depFile] = digest(cacheKeyRoot + readFile(depFile));
   });
 
   var cacheRecord = {
@@ -94,7 +94,7 @@ function readCache(cacheKeyRoot, cacheDir, resourcePath, log) {
   for (var i = 0; i < depFiles.length; i++) {
     var depFile = depFiles[i];
     var cachedVersionDigest = cacheRecord.dependencies[depFiles[i]];
-    var currentDigest = digest(readFile(depFile));
+    var currentDigest = digest(cacheKeyRoot + readFile(depFile));
 
     // if digest of any dependency has changed, the cached version is invalid
     if (cachedVersionDigest !== currentDigest) {
