@@ -102,8 +102,6 @@ function doBuild(filename, done) {
     },
   };
 
-  console.error('webpackConfigForBuild.module.loaders', webpackConfigForBuild.module.loaders)
-
   webpack(webpackConfigForBuild, function(err, stats) {
     if (err) return done(err);
     var jsonStats = stats.toJson();
