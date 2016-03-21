@@ -14,7 +14,7 @@ module.exports = {
         test: /\.dep$/,
         loader: path.resolve(testUtils.projectRoot, './index.js'), // cached-loader
         query: {
-          cacheDir: path.join(testUtils.testOutputDir, 'cached-loader'),
+          cacheDirectory: path.join(testUtils.testOutputDir, 'cached-loader'),
         },
       },
       {

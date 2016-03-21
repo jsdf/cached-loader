@@ -26,8 +26,8 @@ module.exports = {
           {
             loader: 'cached-loader',
             query: {
-              cacheDir: path.join(opts.rootDir, 'tmp/cache/cached-loader'),
-              cacheKeyRoot: JSON.stringify(opts) + JSON.stringify(sassConfig),
+              cacheDirectory: path.join(opts.rootDir, 'tmp/cache/cached-loader'),
+              cacheIdentifier: JSON.stringify(opts) + JSON.stringify(sassConfig),
             },
           },
           {

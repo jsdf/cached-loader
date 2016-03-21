@@ -8,17 +8,17 @@ function cachedLoaderPitch(remainingRequest, precedingRequest, data) {
   this.cacheable && this.cacheable();
 
   var query = loaderUtils.parseQuery(this.query);
-  if (!query.cacheDir) {
-    throw new Error('required query arg "cacheDir" not set');
+  if (!query.cacheDirectory) {
+    throw new Error('required query arg "cacheDirectory" not set');
   }
-  ensureCacheDir(query.cacheDir);
-  data.cacheDir = query.cacheDir;
-  data.cacheKeyRoot = query.cacheKeyRoot || '';
+  ensureCacheDir(query.cacheDirectory);
+  data.cacheDirectory = query.cacheDirectory;
+  data.cacheIdentifier = query.cacheIdentifier || '';
   data.debug = query.debug;
 
   var cacheRecord = readCache(
-    query.cacheKeyRoot,
-    query.cacheDir,
+    query.cacheIdentifier,
+    query.cacheDirectory,
     this.resourcePath,
     query.debug ? logToStderr : logToNull
   );
@@ -34,12 +34,12 @@ function cachedLoaderPitch(remainingRequest, precedingRequest, data) {
 function cachedLoader(content) {
   this.cacheable && this.cacheable();
 
-  if (!this.data.cacheDir) return content;
-  ensureCacheDir(this.data.cacheDir);
+  if (!this.data.cacheDirectory) return content;
+  ensureCacheDir(this.data.cacheDirectory);
 
   writeCache(
-    this.data.cacheKeyRoot,
-    this.data.cacheDir,
+    this.data.cacheIdentifier,
+    this.data.cacheDirectory,
     this.resourcePath,
     content,
     this._module.fileDependencies,
@@ -55,13 +55,13 @@ function digest(content) {
   return shasum.digest('hex');
 }
 
-function writeCache(cacheKeyRoot, cacheDir, resourcePath, content, fileDependencies, log) {
-  var key = digest(cacheKeyRoot + readFile(resourcePath));
+function writeCache(cacheIdentifier, cacheDirectory, resourcePath, content, fileDependencies, log) {
+  var key = digest(cacheIdentifier + readFile(resourcePath));
 
   var dependencies = {};
 
   fileDependencies.forEach(function(depFile) {
-    dependencies[depFile] = digest(cacheKeyRoot + readFile(depFile));
+    dependencies[depFile] = digest(cacheIdentifier + readFile(depFile));
   });
 
   var cacheRecord = {
@@ -70,20 +70,19 @@ function writeCache(cacheKeyRoot, cacheDir, resourcePath, content, fileDependenc
     content: content,
   };
 
-
   log('writeCache', key, resourcePath);
 
-  writeFile(path.join(cacheDir, key), JSON.stringify(cacheRecord));
+  writeFile(path.join(cacheDirectory, key), JSON.stringify(cacheRecord));
 }
 
-function readCache(cacheKeyRoot, cacheDir, resourcePath, log) {
-  var key = digest(cacheKeyRoot + readFile(resourcePath));
+function readCache(cacheIdentifier, cacheDirectory, resourcePath, log) {
+  var key = digest(cacheIdentifier + readFile(resourcePath));
 
   log('readCache', key, resourcePath);
 
   var cacheRecord;
   try {
-    cacheRecord = JSON.parse(readFile(path.join(cacheDir, key)));
+    cacheRecord = JSON.parse(readFile(path.join(cacheDirectory, key)));
   } catch (err) {
     log('readCache miss', err + '');
     if (err.code === 'ENOENT') return null;
@@ -94,7 +93,7 @@ function readCache(cacheKeyRoot, cacheDir, resourcePath, log) {
   for (var i = 0; i < depFiles.length; i++) {
     var depFile = depFiles[i];
     var cachedVersionDigest = cacheRecord.dependencies[depFiles[i]];
-    var currentDigest = digest(cacheKeyRoot + readFile(depFile));
+    var currentDigest = digest(cacheIdentifier + readFile(depFile));
 
     // if digest of any dependency has changed, the cached version is invalid
     if (cachedVersionDigest !== currentDigest) {
