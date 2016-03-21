@@ -5,6 +5,7 @@ Adds persistent on-disk caching to webpack loaders
 ## Example
 
 ```js
+var path = require('path');
 var combineLoaders = require('webpack-combine-loaders');
 
 // some external config
