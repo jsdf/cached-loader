@@ -8,6 +8,7 @@ module.exports = {
     node: true,
   },
   rules: {
+    "no-console": 0,
     // style
     "semi": 2,
     "no-extra-semi": 2,

@@ -15,6 +15,11 @@
     "eslint": "2.4.0",
     "rimraf": "^2.5.2",
     "tap": "^5.7.0",
-    "webpack": "^1.12.14"
+    "webpack": "^1.12.14",
+    "webpack-combine-loaders": "^2.0.0"
+  },
+  "dependencies": {
+    "loader-utils": "^0.2.12",
+    "mkdirp": "^0.5.1"
   }
 }

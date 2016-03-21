@@ -1,3 +1,2 @@
-require('../../tmp/test/moduleWhichChanges')
-
+require('./depWithChanges.dep');
 console.log('a');
