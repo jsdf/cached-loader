@@ -43,7 +43,7 @@ module.exports = {
           },
           {
             loader: 'sass-loader',
-            query: assign({}, sassConfig, {
+            query: Object.assign({}, sassConfig, {
               sourceMap: opts.cssSourcemaps,
             }),
           },
