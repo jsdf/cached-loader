@@ -11,42 +11,54 @@ function cachedLoaderPitch(remainingRequest, precedingRequest, data) {
   if (!query.cacheDirectory) {
     throw new Error('required query arg "cacheDirectory" not set');
   }
-  ensureCacheDir(query.cacheDirectory);
+
   data.cacheDirectory = query.cacheDirectory;
   data.cacheIdentifier = query.cacheIdentifier || '';
   data.debug = query.debug;
 
-  var cacheRecord = readCache(
-    query.cacheIdentifier,
-    query.cacheDirectory,
-    this.resourcePath,
-    query.debug ? logToStderr : logToNull
-  );
+  var callback = this.async();
 
-  if (cacheRecord) {
-    Object.keys(cacheRecord.dependencies).forEach(function(depFile) {
-      this.dependency(depFile);
-    }.bind(this));
-    return cacheRecord.content;
-  }
+  ensureCacheDir(query.cacheDirectory)
+    .then(() => {
+      return readCache(
+        query.cacheIdentifier,
+        query.cacheDirectory,
+        this.resourcePath,
+        query.debug ? logToStderr : logToNull
+      );
+    })
+    .then(cacheRecord => {
+      if (cacheRecord) {
+        Object.keys(cacheRecord.dependencies).forEach(function(depFile) {
+          this.dependency(depFile);
+        }.bind(this));
+        return cacheRecord.content;
+      }
+    })
+    .then(callback);
 }
 
 function cachedLoader(content) {
   this.cacheable && this.cacheable();
 
-  if (!this.data.cacheDirectory) return content;
-  ensureCacheDir(this.data.cacheDirectory);
+  if (!this.data.cacheDirectory) {
+    throw new Error('required query arg "cacheDirectory" not set');
+  }
 
-  writeCache(
-    this.data.cacheIdentifier,
-    this.data.cacheDirectory,
-    this.resourcePath,
-    content,
-    this._module.fileDependencies,
-    this.data.debug ? logToStderr : logToNull
-  );
+  var callback = this.async();
 
-  return content;
+  ensureCacheDir(this.data.cacheDirectory)
+    .then(() => {
+      writeCache(
+        this.data.cacheIdentifier,
+        this.data.cacheDirectory,
+        this.resourcePath,
+        content,
+        this._module.fileDependencies,
+        this.data.debug ? logToStderr : logToNull
+      );
+    })
+    .then(callback);
 }
 
 function digest(content) {
@@ -56,66 +68,94 @@ function digest(content) {
 }
 
 function writeCache(cacheIdentifier, cacheDirectory, resourcePath, content, fileDependencies, log) {
-  var key = digest(cacheIdentifier + readFile(resourcePath));
-
-  var dependencies = {};
-
-  fileDependencies.forEach(function(depFile) {
-    dependencies[depFile] = digest(cacheIdentifier + readFile(depFile));
-  });
-
+  var key = null;
   var cacheRecord = {
     resourcePath: resourcePath,
-    dependencies: dependencies,
+    dependencies: null,
     content: content,
   };
 
-  log('writeCache', key, resourcePath);
+  readFile(resourcePath)
+    .then(content => {
+      key = digest(cacheIdentifier + content);
 
-  writeFile(path.join(cacheDirectory, key), JSON.stringify(cacheRecord));
+      var dependencies = {};
+
+      return Promise.all(
+        fileDependencies.map((depFile) => {
+          return readFile(depFile)
+            .then(depFileContents => {
+              dependencies[depFile] = digest(cacheIdentifier + depFileContents);
+            });
+        })
+      )
+        .then(() => {
+          cacheRecord.dependencies = dependencies;
+        });
+    })
+    .then(() => {
+      log('writeCache', key, resourcePath);
+
+      return writeFile(path.join(cacheDirectory, key), JSON.stringify(cacheRecord));
+    });
 }
 
 function readCache(cacheIdentifier, cacheDirectory, resourcePath, log) {
-  var key = digest(cacheIdentifier + readFile(resourcePath));
+  var key = null;
+  var cacheRecord = null;
 
-  log('readCache', key, resourcePath);
+  readFile(resourcePath)
+    .then(currentContent => {
+      key = digest(cacheIdentifier + currentContent);
 
-  var cacheRecord;
-  try {
-    cacheRecord = JSON.parse(readFile(path.join(cacheDirectory, key)));
-  } catch (err) {
-    log('readCache miss', err + '');
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
+      log('readCache', key, resourcePath);
 
-  var depFiles = Object.keys(cacheRecord.dependencies);
-  for (var i = 0; i < depFiles.length; i++) {
-    var depFile = depFiles[i];
-    var cachedVersionDigest = cacheRecord.dependencies[depFiles[i]];
-    var currentDigest = digest(cacheIdentifier + readFile(depFile));
+      return readFile(path.join(cacheDirectory, key));
+    })
+    .then(cacheFileContent => {
+      cacheRecord = JSON.parse(cacheFileContent);
+    })
+    .then(() => {
+      var depFiles = Object.keys(cacheRecord.dependencies);
 
-    // if digest of any dependency has changed, the cached version is invalid
-    if (cachedVersionDigest !== currentDigest) {
-      log('readCache miss', key, resourcePath, depFile, cachedVersionDigest, currentDigest);
-      return null;
+      Promise.all(
+        depFiles.map((depFile) => {
+          var depFile = depFiles[i];
+          var cachedVersionDigest = cacheRecord.dependencies[depFiles[i]];
+          var currentDigest = digest(cacheIdentifier + readFile(depFile));
+
+          // if digest of any dependency has changed, the cached version is invalid
+          if (cachedVersionDigest !== currentDigest) {
+            log('readCache miss', key, resourcePath, depFile, cachedVersionDigest, currentDigest);
+            return null;
+          }
+        })
+      )
+
+      log('readCache hit', key, resourcePath);
+      return cacheRecord;
+    })
+
+
+
+
+    .catch((err) => {
+      log('readCache miss', err + '');
+      if (err.code === 'ENOENT') return null;
+      return Promise.reject(err);
     }
-  }
-
-  log('readCache hit', key, resourcePath);
-  return cacheRecord;
 }
 
 function readFile(filepath) {
-  return fs.readFileSync(filepath, {encoding: 'utf8'});
+  return makePromise(done => fs.readFile(filepath, {encoding: 'utf8'}, done));
 }
 
 function writeFile(filepath, content) {
-  fs.writeFileSync(filepath, content, {encoding: 'utf8'});
+  return makePromise(done => fs.writeFile(filepath, content, {encoding: 'utf8'}, done));
 }
 
 function ensureCacheDir(dirpath) {
-  mkdirp.sync(dirpath);
+  makePromise(done => mkdirp(dirpath, done));
 }
 
 function logToStderr() {
@@ -123,6 +163,15 @@ function logToStderr() {
 }
 
 function logToNull() {}
+
+function makePromise(fn) {
+  return new Promise((resolve, reject) => {
+    fn((err, data) => {
+      if (err) return reject(err);
+      return data;
+    });
+  });
+}
 
 cachedLoader.pitch = cachedLoaderPitch;
 
