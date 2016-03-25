@@ -135,4 +135,5 @@ module.exports = {
   readCache: readCache,
   writeCache: writeCache,
   ensureCacheDir: ensureCacheDir,
+  digest: digest,
 };
