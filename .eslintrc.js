@@ -10,6 +10,7 @@ module.exports = {
   },
   rules: {
     "no-console": 0,
+    "no-shadow": 2,
     // style
     "semi": 2,
     "no-extra-semi": 2,

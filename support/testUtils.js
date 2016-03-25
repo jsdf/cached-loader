@@ -4,7 +4,6 @@ var rimraf = require('rimraf');
 
 var projectRoot = path.resolve(__dirname, '../');
 
-// TODO: move this somewhere better
 var testOutputDir = path.join(projectRoot, 'tmp/test');
 
 // mtime resolution can be 1-2s depending on OS
@@ -16,12 +15,14 @@ function waitForIOSettle(done) {
   setTimeout(done, minMtimeResolution);
 }
 
-function cleanupTestOutputDir(done) {
-  rimraf(testOutputDir, {disableGlob: true}, (err) => {
-    if (err) done(err);
+var fixturesDir = path.join(projectRoot, 'fixtures');
 
-    execFile('mkdir', ['-p', testOutputDir], (err) => {
-      if (err) done(err);
+function cleanupTestOutputDir(done) {
+  rimraf(testOutputDir, {disableGlob: true}, (rmRfErr) => {
+    if (rmRfErr) done(rmRfErr);
+
+    execFile('mkdir', ['-p', testOutputDir], (mkdirErr) => {
+      if (mkdirErr) done(mkdirErr);
       done();
     });
   });
@@ -33,4 +34,5 @@ module.exports = {
   testOutputDir,
   projectRoot,
   cleanupTestOutputDir,
+  fixturesDir,
 };

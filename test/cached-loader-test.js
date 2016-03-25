@@ -11,8 +11,6 @@ var testUtils = require('../support/testUtils');
 var entry = path.join(testUtils.testOutputDir, 'depWithChanges.dep');
 
 test('it builds valid bundles when files change', (t) => {
-  t.plan(3);
-
   var bundleFile1 = 'bundle-1.js';
   var bundleFile2 = 'bundle-2.js';
 
@@ -21,21 +19,21 @@ test('it builds valid bundles when files change', (t) => {
   var inputContent1 = '123';
   var inputContent2 = '567';
 
-  testUtils.cleanupTestOutputDir((err) => {
-    t.notOk(err, 'clean up test output dir');
+  testUtils.cleanupTestOutputDir((cleanupErr) => {
+    t.notOk(cleanupErr, 'clean up test output dir');
 
     writeFile(entry, dependency1);
     writeFile(dependency1, inputContent1);
     writeFile(dependency2, inputContent2);
-    doBuild(bundleFile1, (err) => {
-      if (err) return t.notOk(err);
+    doBuild(bundleFile1, (build1Err) => {
+      t.notOk(build1Err, 'built first time');
 
       var output1 = readFile(path.join(testUtils.testOutputDir, bundleFile1));
       t.match(output1, JSON.stringify(inputContent1), 'built bundle containing initial content');
 
       writeFile(entry, dependency2);
-      doBuild(bundleFile2, err => {
-        if (err) return t.notOk(err);
+      doBuild(bundleFile2, build2err => {
+        t.notOk(build2err, 'built second time');
 
         var output2 = readFile(path.join(testUtils.testOutputDir, bundleFile2));
         t.match(output2, JSON.stringify(inputContent2), 'built bundle containing changed content');
@@ -46,9 +44,8 @@ test('it builds valid bundles when files change', (t) => {
   });
 });
 
-
 test('it builds valid bundles when do not change', (t) => {
-  t.plan(3);
+  t.plan(5);
 
   var bundleFile1 = 'bundle-1.js';
   var bundleFile2 = 'bundle-2.js';
@@ -56,19 +53,19 @@ test('it builds valid bundles when do not change', (t) => {
   var dependency1 = path.join(testUtils.testOutputDir, 'stuff.txt');
   var inputContent1 = '123';
 
-  testUtils.cleanupTestOutputDir((err) => {
-    t.notOk(err, 'clean up test output dir');
+  testUtils.cleanupTestOutputDir((cleanupErr) => {
+    t.notOk(cleanupErr, 'clean up test output dir');
 
     writeFile(entry, dependency1);
     writeFile(dependency1, inputContent1);
-    doBuild(bundleFile1, (err) => {
-      if (err) return t.notOk(err);
+    doBuild(bundleFile1, (build1Err) => {
+      t.notOk(build1Err, 'built first time');
 
       var output1 = readFile(path.join(testUtils.testOutputDir, bundleFile1));
       t.match(output1, JSON.stringify(inputContent1), 'built bundle containing initial content');
 
-      doBuild(bundleFile2, err => {
-        if (err) return t.notOk(err);
+      doBuild(bundleFile2, build2Err => {
+        t.notOk(build2Err, 'built second time');
 
         var output2 = readFile(path.join(testUtils.testOutputDir, bundleFile2));
         t.match(output2, JSON.stringify(inputContent1), 'built bundle containing same content');
@@ -108,12 +105,12 @@ function doBuild(filename, done) {
     if (jsonStats.errors.length > 0) {
       console.error.apply(console, jsonStats.errors);
       console.error.apply(console, jsonStats.errorDetails);
-      return done(new Error(jsonStats.errors));
+      return done(new Error(jsonStats.errors.join(', ')));
     }
     if (jsonStats.warnings.length > 0) {
       console.error.apply(console, jsonStats.warnings);
     }
 
-    testUtils.waitForIOSettle(done);
+    done(null);
   });
 }
