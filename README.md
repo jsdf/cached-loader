@@ -55,3 +55,9 @@ module.exports = {
 };
 ```
 Now webpack should be faster from a cold start.
+
+
+### See also
+
+- [only-if-changed-webpack-plugin](https://github.com/jsdf/only-if-changed-webpack-plugin) – Webpack plugin to only run build if dependent files have changed
+
