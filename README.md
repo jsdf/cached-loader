@@ -2,6 +2,8 @@
 
 Adds persistent on-disk caching to webpack loaders
 
+**deprecated.** use [webpack-contrib/cache-loader](https://github.com/webpack-contrib/cache-loader) instead.
+
 ## Example
 
 ```js
